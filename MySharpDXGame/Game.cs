@@ -48,18 +48,6 @@ namespace Valokrant.V1
             new VertexPositionColor(new Vector3(0.5f, 0.5f, 0.0f), SharpDX.Color.Green),
             new VertexPositionColor(new Vector3(0.0f, -0.5f, 0.0f), SharpDX.Color.Blue) };*/
 
-        private VertexPositionColor[] vertices = new VertexPositionColor[]
-        {
-            //Tri 0
-            new VertexPositionColor(new Vector3(-0.1f, 0.1f, 0.0f), SharpDX.Color.Red),
-            new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
-            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f), SharpDX.Color.Blue),
-
-            //Tri 1
-            new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Red),
-            new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
-            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f), SharpDX.Color.Blue),
-        };
 		private D3D11.Buffer triangleVertexBuffer;
 
         public WindowInfo windowInfo;
@@ -100,7 +88,6 @@ namespace Valokrant.V1
 
 			InitializeDeviceResources();
 			InitializeShaders();
-			InitializeTriangle();
 		}
 
         private void Device_MouseInput(object sender, MouseInputEventArgs e)
@@ -188,7 +175,7 @@ namespace Valokrant.V1
 			d3dDeviceContext.InputAssembler.InputLayout = inputLayout;
 		}
 
-		private void InitializeTriangle()
+		private void InitializeTriangle(VertexPositionColor[] vertices)
 		{
 			// Create a vertex buffer, and use our array with vertices as data
 			if(vertices.Length > 0)
@@ -246,9 +233,9 @@ namespace Valokrant.V1
                 }
             }
 
-            vertices = batchedVerts.ToArray();
+            var vertices = batchedVerts.ToArray();
 
-            InitializeTriangle();
+            InitializeTriangle(vertices);
 
             // Set render targets
             d3dDeviceContext.OutputMerger.SetRenderTargets(renderTargetView);
@@ -280,8 +267,4 @@ namespace Valokrant.V1
 			renderForm.Dispose();
 		}
 	}
-
-    internal class kEys
-    {
-    }
 }

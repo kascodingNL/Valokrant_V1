@@ -27,7 +27,6 @@ namespace Valokrant.V1
                 if(comp.GetType() == type.GetType())
                 {
                     toReturn = comp;
-                    Console.WriteLine("Found type: " + comp.GetType());
                     break;
                 }
             }
