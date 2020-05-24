@@ -191,7 +191,10 @@ namespace Valokrant.V1
 		private void InitializeTriangle()
 		{
 			// Create a vertex buffer, and use our array with vertices as data
-			triangleVertexBuffer = D3D11.Buffer.Create(d3dDevice, D3D11.BindFlags.VertexBuffer, vertices);
+			if(vertices.Length > 0)
+            {
+                triangleVertexBuffer = D3D11.Buffer.Create(d3dDevice, D3D11.BindFlags.VertexBuffer, vertices);
+            }
 		}
 
         public float updateMargin;
@@ -244,32 +247,6 @@ namespace Valokrant.V1
             }
 
             vertices = batchedVerts.ToArray();
-
-            /*vertices = new VertexPositionColor[]
-            {
-                            new VertexPositionColor(new Vector3(-0.1f, 0.1f, 0.0f), SharpDX.Color.Red),
-            new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
-            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
-
-                                        new VertexPositionColor(new Vector3(-0.1f, 0.4f, 0.5f), SharpDX.Color.Red),
-            new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
-            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
-                                                    new VertexPositionColor(new Vector3(-0.1f, -0.4f, -0.5f), SharpDX.Color.Red),
-            new VertexPositionColor(new Vector3(0.1f, 0.7f, 0.0f), SharpDX.Color.Green),
-            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
-
-                                                                new VertexPositionColor(new Vector3(-0.1f, -0.4f, -0.5f), SharpDX.Color.Red),
-            new VertexPositionColor(new Vector3(-.2f, 0.7f, 0.0f), SharpDX.Color.Green),
-            new VertexPositionColor(new Vector3(0.7f, -0.7f, 0.0f + updateMargin), SharpDX.Color.Blue),
-            };
-
-            for(int i = 0; i < vertices.Length; i++)
-            {
-                var cachedPos = vertices[i].Position;
-                var cachedColor = vertices[i].Color;
-                vertices[i] = new VertexPositionColor(cachedPos + objPos, cachedColor);
-            }*/
-
 
             InitializeTriangle();
 
