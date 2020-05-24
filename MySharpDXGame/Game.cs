@@ -107,8 +107,6 @@ namespace Valokrant.V1
         {
             e.Mode = MouseMode.MoveAbsolute;
             mousePos += new Vector2(e.X * .003f, -e.Y * .003f);
-            objPos = new Vector3(mousePos.X, mousePos.Y, 0);
-            Console.WriteLine(objPos);
         }
 
         private Keys keys;
@@ -218,26 +216,28 @@ namespace Valokrant.V1
 
             //Console.WriteLine("dt: " + dt + ", frame_rate: " + framerate);
             //objPos += marginBack ? new Vector3(-.1f, 0, 0) : new Vector3(.1f, 0, 0);
-            if(objPos.X > 2)
-            {
-                marginBack = true;
-            }
-            if(objPos.X < -2)
-            {
-                marginBack = false;
-            }
             List<VertexPositionColor> batchedVerts = new List<VertexPositionColor>();
 
             foreach(GameObject go in gameobjects.Values)
             {
+                Transform transform = null;
                 foreach(var component in go.components)
                 {
+                    if(component is Transform)
+                    {
+                        transform = (Transform)component;
+                    }
                     if (component is MeshRenderer)
                     {
                         var verts = ((MeshRenderer)component).vertices;
                         for (int i = 0; i < verts.Length; i++)
                         {
-                            batchedVerts.Add(verts[i]);
+                            var cachedPos = verts[i].Position;
+                            var cachedColor = verts[i].Color;
+
+                            //verts[i] = new VertexPositionColor(cachedPos + transform.position, cachedColor);
+                            Console.WriteLine(verts[i].Position);
+                            batchedVerts.Add(new VertexPositionColor(cachedPos + transform.position, cachedColor));
                         }
                     }
                 }

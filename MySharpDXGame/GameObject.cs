@@ -1,4 +1,5 @@
 ﻿using SharpDX;
+using System;
 using System.Collections.Generic;
 
 namespace Valokrant.V1
@@ -9,7 +10,29 @@ namespace Valokrant.V1
 
         public GameObject()
         {
-            components.Add(new Transform(new Vector3(0, 0, 0), new Quaternion(0, 0, 0, 0)));
+            components.Add(new Transform(new Vector3(0, .5f, .5f), new Quaternion(0, 0, 0, 0)));
+        }
+
+        public bool HasComponent(GameComponents component)
+        {
+            return components.Contains(component);
+        }
+
+        public GameComponents GetComponent(GameComponents type)
+        {
+            GameComponents toReturn = null;
+
+            foreach(var comp in components)
+            {
+                if(comp.GetType() == type.GetType())
+                {
+                    toReturn = comp;
+                    Console.WriteLine("Found type: " + comp.GetType());
+                    break;
+                }
+            }
+
+            return toReturn;
         }
     }
 
