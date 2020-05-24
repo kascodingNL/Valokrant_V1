@@ -12,6 +12,8 @@ using D3D11 = SharpDX.Direct3D11;
 using System.Windows.Forms;
 using SharpDX.Direct2D1;
 using System.Collections.Generic;
+using Valokrant.V1.PhysX;
+using Jitter.Collision.Shapes;
 
 namespace Valokrant.V1
 {
@@ -42,6 +44,8 @@ namespace Valokrant.V1
 			new D3D11.InputElement("COLOR", 0, Format.R32G32B32A32_Float, 12, 0, D3D11.InputClassification.PerVertexData, 0)
 		};
 
+        public PhysicsScene PhysicsScene;
+
         // Triangle vertices
         /*private VertexPositionColor[] vertices = new VertexPositionColor[] {
             new VertexPositionColor(new Vector3(-0.5f, 0.5f, 0.0f), SharpDX.Color.Red),
@@ -60,7 +64,11 @@ namespace Valokrant.V1
 		/// </summary>
 		public Game(string windowName, int version)
 		{
+            PhysicsScene = new PhysicsScene(true);
+
             gameobjects.Add(0, new GameObject());
+
+            gameobjects[0].components.Add(new Rigidbody(new BoxShape(1, 1, 1), this));
 
             var vertArr = new VertexPositionColor[]
             {
@@ -100,6 +108,13 @@ namespace Valokrant.V1
         private void Device_KeyboardInput(object sender, KeyboardInputEventArgs e)
         {
             keys = e.Key;
+
+            ((Rigidbody)gameobjects[0].components[1]).jitterBody.LinearVelocity += new Jitter.LinearMath.JVector(0, 4, 0);
+
+            var pos = ((Rigidbody)gameobjects[0].components[1]).jitterBody.Position;
+            ((Transform)gameobjects[0].components[0]).position = new Vector3(pos.X, pos.Y, pos.Z);
+
+            Console.WriteLine("Huts");
         }
 
         /// <summary>
@@ -204,6 +219,8 @@ namespace Valokrant.V1
 
             lastDraw = DateTime.Now;
 
+            PhysicsScene.Simulate(1/60f);
+
             //Console.WriteLine("dt: " + dt + ", frame_rate: " + framerate);
             //objPos += marginBack ? new Vector3(-.1f, 0, 0) : new Vector3(.1f, 0, 0);
             List<VertexPositionColor> batchedVerts = new List<VertexPositionColor>();
@@ -217,6 +234,13 @@ namespace Valokrant.V1
                     {
                         transform = (Transform)component;
                     }
+                    if (component is Rigidbody)
+                    {
+                        var body = (Rigidbody)component;
+                        Console.WriteLine(body.jitterBody.Position);
+
+                        transform.position = new Vector3(body.jitterBody.Position.X, body.jitterBody.Position.Y, body.jitterBody.Position.Z);
+                    }
                     if (component is MeshRenderer)
                     {
                         var verts = ((MeshRenderer)component).vertices;
@@ -226,7 +250,7 @@ namespace Valokrant.V1
                             var cachedColor = verts[i].Color;
 
                             //verts[i] = new VertexPositionColor(cachedPos + transform.position, cachedColor);
-                            Console.WriteLine(verts[i].Position);
+                            //Console.WriteLine(verts[i].Position);
                             batchedVerts.Add(new VertexPositionColor(cachedPos + transform.position, cachedColor));
                         }
                     }

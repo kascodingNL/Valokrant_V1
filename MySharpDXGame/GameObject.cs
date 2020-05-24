@@ -1,4 +1,5 @@
-﻿using SharpDX;
+﻿using Jitter.Collision.Shapes;
+using SharpDX;
 using System;
 using System.Collections.Generic;
 
@@ -64,6 +65,19 @@ namespace Valokrant.V1
         {
             this.position = position;
             this.quaternion = rotation;
+        }
+    }
+
+    public class Rigidbody : GameComponents
+    {
+        public Jitter.Dynamics.RigidBody jitterBody;
+
+        public Rigidbody(Shape shape, Game gameScene)
+        {
+            Jitter.Dynamics.RigidBody body = new Jitter.Dynamics.RigidBody(shape);
+            jitterBody = body;
+
+            gameScene.PhysicsScene.PhysicsWorld.AddBody(body);
         }
     }
 }
