@@ -27,7 +27,8 @@ namespace Valokrant.V1.PhysX
 
             var ground = new Jitter.Dynamics.RigidBody(new BoxShape(100, 1, 100));
 
-            ground.Position = new Jitter.LinearMath.JVector(0, -9, 0);
+            ground.IsStatic = true;
+            ground.Position = new Jitter.LinearMath.JVector(0, -1, 0);
             PhysicsWorld.AddBody(ground);
         }
 

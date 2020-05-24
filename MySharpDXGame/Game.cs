@@ -14,6 +14,7 @@ using SharpDX.Direct2D1;
 using System.Collections.Generic;
 using Valokrant.V1.PhysX;
 using Jitter.Collision.Shapes;
+using ObjParse;
 
 namespace Valokrant.V1
 {
@@ -76,6 +77,7 @@ namespace Valokrant.V1
             new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
             new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
             };
+
             gameobjects[0].components.Add(new MeshRenderer(vertArr));
 
             SharpDX.RawInput.Device.RegisterDevice(SharpDX.Multimedia.UsagePage.Generic, SharpDX.Multimedia.UsageId.GenericMouse, DeviceFlags.None);
@@ -95,6 +97,7 @@ namespace Valokrant.V1
 			renderForm.AllowUserResizing = false;
 
 			InitializeDeviceResources();
+            InitializeTriangle(vertArr);
 			InitializeShaders();
 		}
 
@@ -108,13 +111,12 @@ namespace Valokrant.V1
         private void Device_KeyboardInput(object sender, KeyboardInputEventArgs e)
         {
             keys = e.Key;
+            float dt = -(float)(DateTime.Now - lastDraw).TotalMilliseconds;
 
-            ((Rigidbody)gameobjects[0].components[1]).jitterBody.LinearVelocity += new Jitter.LinearMath.JVector(0, 4, 0);
+            ((Rigidbody)gameobjects[0].components[1]).jitterBody.LinearVelocity += new Jitter.LinearMath.JVector(0, 1, 0);
 
             var pos = ((Rigidbody)gameobjects[0].components[1]).jitterBody.Position;
             ((Transform)gameobjects[0].components[0]).position = new Vector3(pos.X, pos.Y, pos.Z);
-
-            Console.WriteLine("Huts");
         }
 
         /// <summary>
@@ -209,6 +211,8 @@ namespace Valokrant.V1
 
         public int drawCount;
 
+        public VertexPositionColor[] lastVertexes;
+
 		/// <summary>
 		/// Draw the game.
 		/// </summary>
@@ -237,7 +241,7 @@ namespace Valokrant.V1
                     if (component is Rigidbody)
                     {
                         var body = (Rigidbody)component;
-                        Console.WriteLine(body.jitterBody.Position);
+                        //Console.WriteLine(body.jitterBody.Position);
 
                         transform.position = new Vector3(body.jitterBody.Position.X, body.jitterBody.Position.Y, body.jitterBody.Position.Z);
                     }
@@ -251,15 +255,25 @@ namespace Valokrant.V1
 
                             //verts[i] = new VertexPositionColor(cachedPos + transform.position, cachedColor);
                             //Console.WriteLine(verts[i].Position);
+                            //Console.WriteLine("Batch " + i);
                             batchedVerts.Add(new VertexPositionColor(cachedPos + transform.position, cachedColor));
                         }
                     }
                 }
             }
-
             var vertices = batchedVerts.ToArray();
-
-            InitializeTriangle(vertices);
+            if (lastVertexes != null)
+            {
+                if (lastVertexes != vertices)
+                {
+                    InitializeTriangle(vertices);
+                }
+                lastVertexes = vertices;
+            }
+            else
+            {
+                lastVertexes = vertices;
+            }
 
             // Set render targets
             d3dDeviceContext.OutputMerger.SetRenderTargets(renderTargetView);
