@@ -14,7 +14,7 @@ namespace Valokrant.V1
         {
             new Thread(() =>
             {
-                using (Game game = new Game())
+                using (Game game = new Game("Gekke Valokrant V1 Test", 1))
                 {
                     game.Run();
                 }

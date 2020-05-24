@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySharpDXGame", "MySharpDXGame\MySharpDXGame.csproj", "{F2267781-DCFF-485E-BA8A-62880CA8D8DA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "V1", "MySharpDXGame\V1.csproj", "{F2267781-DCFF-485E-BA8A-62880CA8D8DA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +18,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B61CC3A1-7A3E-4A83-8AC9-740A93555723}
 	EndGlobalSection
 EndGlobal

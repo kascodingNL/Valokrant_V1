@@ -4,19 +4,22 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Windows;
+using SharpDX.RawInput;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using D3D11 = SharpDX.Direct3D11;
+using System.Windows.Forms;
+using SharpDX.Direct2D1;
+using System.Collections.Generic;
 
 namespace Valokrant.V1
 {
 	public class Game : IDisposable
 	{
 		private RenderForm renderForm;
+
+        public Dictionary<int, GameObject> gameobjects = new Dictionary<int, GameObject>();
 
 		private const int Width = 1280;
 		private const int Height = 720;
@@ -59,13 +62,39 @@ namespace Valokrant.V1
         };
 		private D3D11.Buffer triangleVertexBuffer;
 
+        public WindowInfo windowInfo;
+
+        public Vector2 mousePos;
+        public Surface framerateSurface;
+
 		/// <summary>
 		/// Create and initialize a new game.
 		/// </summary>
-		public Game()
+		public Game(string windowName, int version)
 		{
+            gameobjects.Add(0, new GameObject());
+
+            var vertArr = new VertexPositionColor[]
+            {
+                                            new VertexPositionColor(new Vector3(-0.1f, 0.1f, 0.0f), SharpDX.Color.Red),
+            new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
+            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
+            };
+            gameobjects[0].components.Add(new MeshRenderer(vertArr));
+
+            SharpDX.RawInput.Device.RegisterDevice(SharpDX.Multimedia.UsagePage.Generic, SharpDX.Multimedia.UsageId.GenericMouse, DeviceFlags.None);
+            SharpDX.RawInput.Device.RegisterDevice(SharpDX.Multimedia.UsagePage.Generic, SharpDX.Multimedia.UsageId.GenericKeyboard, DeviceFlags.None);
+
+            SharpDX.RawInput.Device.KeyboardInput += Device_KeyboardInput;
+            SharpDX.RawInput.Device.MouseInput += Device_MouseInput;
+
+            windowInfo = new WindowInfo()
+            {
+                WindowName = windowName,
+                startTime = DateTime.Now
+            };
 			// Set window properties
-			renderForm = new RenderForm("My first SharpDX game");
+			renderForm = new RenderForm(windowInfo.WindowName + " V" + version);
 			renderForm.ClientSize = new Size(Width, Height);
 			renderForm.AllowUserResizing = false;
 
@@ -74,10 +103,24 @@ namespace Valokrant.V1
 			InitializeTriangle();
 		}
 
-		/// <summary>
-		/// Start the game.
-		/// </summary>
-		public void Run()
+        private void Device_MouseInput(object sender, MouseInputEventArgs e)
+        {
+            e.Mode = MouseMode.MoveAbsolute;
+            mousePos += new Vector2(e.X * .003f, -e.Y * .003f);
+            objPos = new Vector3(mousePos.X, mousePos.Y, 0);
+            Console.WriteLine(objPos);
+        }
+
+        private Keys keys;
+        private void Device_KeyboardInput(object sender, KeyboardInputEventArgs e)
+        {
+            keys = e.Key;
+        }
+
+        /// <summary>
+        /// Start the game.
+        /// </summary>
+        public void Run()
 		{
 			// Start the render loop
 			RenderLoop.Run(renderForm, RenderCallback);
@@ -161,6 +204,8 @@ namespace Valokrant.V1
 
         public DateTime lastDraw;
 
+        public int drawCount;
+
 		/// <summary>
 		/// Draw the game.
 		/// </summary>
@@ -171,8 +216,8 @@ namespace Valokrant.V1
 
             lastDraw = DateTime.Now;
 
-            Console.WriteLine("dt: " + dt + ", frame_rate: " + framerate);
-            objPos += marginBack ? new Vector3(-.1f, 0, 0) : new Vector3(.1f, 0, 0);
+            //Console.WriteLine("dt: " + dt + ", frame_rate: " + framerate);
+            //objPos += marginBack ? new Vector3(-.1f, 0, 0) : new Vector3(.1f, 0, 0);
             if(objPos.X > 2)
             {
                 marginBack = true;
@@ -181,20 +226,50 @@ namespace Valokrant.V1
             {
                 marginBack = false;
             }
+            List<VertexPositionColor> batchedVerts = new List<VertexPositionColor>();
 
-            vertices = new VertexPositionColor[]
+            foreach(GameObject go in gameobjects.Values)
+            {
+                foreach(var component in go.components)
+                {
+                    if (component is MeshRenderer)
+                    {
+                        var verts = ((MeshRenderer)component).vertices;
+                        for (int i = 0; i < verts.Length; i++)
+                        {
+                            batchedVerts.Add(verts[i]);
+                        }
+                    }
+                }
+            }
+
+            vertices = batchedVerts.ToArray();
+
+            /*vertices = new VertexPositionColor[]
             {
                             new VertexPositionColor(new Vector3(-0.1f, 0.1f, 0.0f), SharpDX.Color.Red),
             new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
             new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
+
+                                        new VertexPositionColor(new Vector3(-0.1f, 0.4f, 0.5f), SharpDX.Color.Red),
+            new VertexPositionColor(new Vector3(0.1f, 0.1f, 0.0f), SharpDX.Color.Green),
+            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
+                                                    new VertexPositionColor(new Vector3(-0.1f, -0.4f, -0.5f), SharpDX.Color.Red),
+            new VertexPositionColor(new Vector3(0.1f, 0.7f, 0.0f), SharpDX.Color.Green),
+            new VertexPositionColor(new Vector3(0.0f, -0.1f, 0.0f + updateMargin), SharpDX.Color.Blue),
+
+                                                                new VertexPositionColor(new Vector3(-0.1f, -0.4f, -0.5f), SharpDX.Color.Red),
+            new VertexPositionColor(new Vector3(-.2f, 0.7f, 0.0f), SharpDX.Color.Green),
+            new VertexPositionColor(new Vector3(0.7f, -0.7f, 0.0f + updateMargin), SharpDX.Color.Blue),
             };
 
             for(int i = 0; i < vertices.Length; i++)
             {
                 var cachedPos = vertices[i].Position;
                 var cachedColor = vertices[i].Color;
-                vertices[i] = new VertexPositionColor(cachedPos + (objPos + new Vector3(0, 0, .5f)), cachedColor);
-            }
+                vertices[i] = new VertexPositionColor(cachedPos + objPos, cachedColor);
+            }*/
+
 
             InitializeTriangle();
 
@@ -228,4 +303,8 @@ namespace Valokrant.V1
 			renderForm.Dispose();
 		}
 	}
+
+    internal class kEys
+    {
+    }
 }
