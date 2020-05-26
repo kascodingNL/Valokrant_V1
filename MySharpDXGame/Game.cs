@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using Valokrant.V1.PhysX;
 using Jitter.Collision.Shapes;
 using ObjParse;
+using SharpDX.DirectInput;
 
 namespace Valokrant.V1
 {
@@ -24,8 +25,8 @@ namespace Valokrant.V1
 
         public Dictionary<int, GameObject> gameobjects = new Dictionary<int, GameObject>();
 
-		private const int Width = 1280;
-		private const int Height = 720;
+		private const int Width = 1920;
+		private const int Height = 1080;
 
 		private D3D11.Device d3dDevice;
 		private D3D11.DeviceContext d3dDeviceContext;
@@ -60,6 +61,9 @@ namespace Valokrant.V1
         public Vector2 mousePos;
         public Surface framerateSurface;
 
+        public Joystick joystick;
+        public Keyboard keyboard;
+
 		/// <summary>
 		/// Create and initialize a new game.
 		/// </summary>
@@ -80,8 +84,8 @@ namespace Valokrant.V1
 
             gameobjects[0].components.Add(new MeshRenderer(vertArr));
 
-            SharpDX.RawInput.Device.RegisterDevice(SharpDX.Multimedia.UsagePage.Generic, SharpDX.Multimedia.UsageId.GenericMouse, DeviceFlags.None);
-            SharpDX.RawInput.Device.RegisterDevice(SharpDX.Multimedia.UsagePage.Generic, SharpDX.Multimedia.UsageId.GenericKeyboard, DeviceFlags.None);
+            SharpDX.RawInput.Device.RegisterDevice(SharpDX.Multimedia.UsagePage.Generic, SharpDX.Multimedia.UsageId.GenericMouse, SharpDX.RawInput.DeviceFlags.None);
+            SharpDX.RawInput.Device.RegisterDevice(SharpDX.Multimedia.UsagePage.Generic, SharpDX.Multimedia.UsageId.GenericKeyboard, SharpDX.RawInput.DeviceFlags.None);
 
             SharpDX.RawInput.Device.KeyboardInput += Device_KeyboardInput;
             SharpDX.RawInput.Device.MouseInput += Device_MouseInput;
@@ -99,7 +103,39 @@ namespace Valokrant.V1
 			InitializeDeviceResources();
             InitializeTriangle(vertArr);
 			InitializeShaders();
-		}
+
+            //Input device initialization
+            var directInput = new DirectInput();
+
+            var joystickGuid = Guid.Empty;
+
+            foreach (var deviceInstance in directInput.GetDevices(SharpDX.DirectInput.DeviceType.Gamepad, DeviceEnumerationFlags.AllDevices))
+                joystickGuid = deviceInstance.InstanceGuid;
+
+            // If Gamepad not found, look for a Joystick
+            if (joystickGuid == Guid.Empty)
+                foreach (var deviceInstance in directInput.GetDevices(SharpDX.DirectInput.DeviceType.Joystick, DeviceEnumerationFlags.AllDevices))
+                    joystickGuid = deviceInstance.InstanceGuid;
+
+            // If Joystick not found, throws an error
+            if (joystickGuid == Guid.Empty)
+            {
+                Console.WriteLine("No joystick/Gamepad found.");
+            }
+            else
+            {
+                joystick = new Joystick(directInput, joystickGuid);
+                joystick.Properties.BufferSize = 128;
+
+                // Acquire the joystick
+                joystick.Acquire();
+
+                keyboard = new Keyboard(directInput);
+
+                keyboard.Properties.BufferSize = 128;
+                keyboard.Acquire();
+            }
+        }
 
         private void Device_MouseInput(object sender, MouseInputEventArgs e)
         {
@@ -197,10 +233,20 @@ namespace Valokrant.V1
 			// Create a vertex buffer, and use our array with vertices as data
 			if(vertices.Length > 0)
             {
-                triangleVertexBuffer = D3D11.Buffer.Create(d3dDevice, D3D11.BindFlags.VertexBuffer, vertices);
+                if (triangleVertexBuffer != null)
+                {
+                    triangleVertexBuffer.Dispose();
+                    triangleVertexBuffer = D3D11.Buffer.Create(d3dDevice, D3D11.BindFlags.VertexBuffer, vertices, usage: ResourceUsage.Dynamic, accessFlags: CpuAccessFlags.Write,
+    optionFlags: ResourceOptionFlags.None);
+                }
+                else
+                {
+                    //Initialize GPU triangle buffer for first time. First time only because after that it gets dynamically updated into ram.
+                    triangleVertexBuffer = D3D11.Buffer.Create(d3dDevice, D3D11.BindFlags.VertexBuffer, vertices, usage: ResourceUsage.Dynamic, accessFlags: CpuAccessFlags.Write,
+                        optionFlags: ResourceOptionFlags.None);
+                }
             }
 		}
-
         public float updateMargin;
         public bool marginBack = false;
 
@@ -212,6 +258,11 @@ namespace Valokrant.V1
         public int drawCount;
 
         public VertexPositionColor[] lastVertexes;
+
+        public JoystickUpdate[] joystickUpdates;
+        public KeyboardUpdate[] keyboardUpdates;
+
+        public DateTime lastJoyChange = DateTime.Now;
 
 		/// <summary>
 		/// Draw the game.
@@ -225,6 +276,55 @@ namespace Valokrant.V1
 
             PhysicsScene.Simulate(1/60f);
 
+            //Joystick polling
+            if(joystick != null)
+            {
+                joystick.Poll();
+
+                joystickUpdates = joystick.GetBufferedData();
+
+                foreach (var state in joystickUpdates)
+                {
+                    //Console.WriteLine(state);
+
+                    if(state.Offset == JoystickOffset.RotationY)
+                    {
+                        float dt1 = (float)(DateTime.Now - lastJoyChange).TotalSeconds;
+                        ((Rigidbody)gameobjects[0].components[1]).jitterBody.LinearVelocity += new Jitter.LinearMath.JVector(0, (state.Value * dt) / 150000, 0);
+                        lastJoyChange = DateTime.Now;
+
+                        var pos = ((Rigidbody)gameobjects[0].components[1]).jitterBody.Position;
+                        ((Transform)gameobjects[0].components[0]).position = new Vector3(pos.X, pos.Y, pos.Z);
+                    }
+
+                    if(state.Offset == JoystickOffset.RotationX)
+                    {
+
+                    }
+                }
+            }
+
+            //Keyboard polling
+            if (keyboard != null)
+            {
+                keyboard.Poll();
+
+                keyboardUpdates = keyboard.GetBufferedData();
+
+                foreach (var update in keyboardUpdates)
+                {
+                    Console.WriteLine(update);
+
+                    if (update.Key == Key.W)
+                    {
+                        ((Rigidbody)gameobjects[0].components[1]).jitterBody.LinearVelocity += new Jitter.LinearMath.JVector(0, 1, 0);
+
+                        var pos = ((Rigidbody)gameobjects[0].components[1]).jitterBody.Position;
+                        ((Transform)gameobjects[0].components[0]).position = new Vector3(pos.X, pos.Y, pos.Z);
+                    }
+                }
+            }
+
             //Console.WriteLine("dt: " + dt + ", frame_rate: " + framerate);
             //objPos += marginBack ? new Vector3(-.1f, 0, 0) : new Vector3(.1f, 0, 0);
             List<VertexPositionColor> batchedVerts = new List<VertexPositionColor>();
@@ -237,6 +337,7 @@ namespace Valokrant.V1
                     if(component is Transform)
                     {
                         transform = (Transform)component;
+                        //Console.WriteLine(transform.position);
                     }
                     if (component is Rigidbody)
                     {
@@ -264,10 +365,7 @@ namespace Valokrant.V1
             var vertices = batchedVerts.ToArray();
             if (lastVertexes != null)
             {
-                if (lastVertexes != vertices)
-                {
-                    InitializeTriangle(vertices);
-                }
+                InitializeTriangle(vertices);
                 lastVertexes = vertices;
             }
             else
